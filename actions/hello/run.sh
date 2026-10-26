@@ -15,5 +15,8 @@ while [ "$i" -le "$CHANCERY_PARAM_COUNT" ]; do
 	i=$((i + 1))
 done
 
-# Standard error is captured too, interleaved with standard output.
+# Standard error is captured as a separate stream, tinted on the petition
+# page. The two streams are read independently, so this line can appear
+# before the last greeting even though it was written after it. Run
+# `exec 2>&1` first when one exactly ordered transcript matters.
 echo 'Done.' >&2

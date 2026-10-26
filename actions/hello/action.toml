@@ -4,7 +4,10 @@ help = """
 Shows how a request reaches a script. Each parameter is validated before
 anyone is asked to approve it, recorded on the petition, and passed to the
 script as a CHANCERY_PARAM_ variable. Output streams to the page and the CLI
-as it is written, which is why the greeting is printed slowly.
+as it is written, which is why the greeting is printed slowly. The final
+"Done." goes to standard error, which is captured as a separate stream: the
+page tints it, and it can appear before the last greeting even though it was
+written after it.
 
 A real action replaces the greeting with its work and keeps the same shape:
 typed parameters with the narrowest constraints that fit, and a script that
