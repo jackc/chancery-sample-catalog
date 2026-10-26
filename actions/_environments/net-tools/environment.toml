@@ -1,0 +1,14 @@
+schema = 1
+description = "Ubuntu 26.04 with curl, dig, openssl, the OpenSSH client and jq."
+base = "ubuntu@26.04"
+
+# setup.sh runs once per build, as root in a disposable guest, and reaches the
+# Ubuntu archive only through this environment's setup destinations. The
+# finished image is then shared by every action that selects net-tools.
+# validate.sh runs unprivileged and offline in a fresh guest of the result; if
+# it fails, the previous image stays in use.
+[setup]
+script = "setup.sh"
+validate = "validate.sh"
+timeout = "15m"
+refresh = "7d"

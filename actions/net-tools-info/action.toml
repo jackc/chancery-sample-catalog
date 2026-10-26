@@ -1,0 +1,21 @@
+schema = 1
+description = "Show the tools the net-tools environment provides, and that it has no network."
+environment = "net-tools"
+help = """
+Runs in the net-tools catalog environment: an Ubuntu image that Chancery
+builds once from the setup script in _environments/net-tools, rebuilds
+weekly, and shares between every action that selects it. The first run waits
+for that build.
+
+Building the image needs network access to the Ubuntu archive, which an
+administrator grants as setup destinations for net-tools. That grant applies
+only while the image is built. This action has no run destinations, so it
+has the tools but cannot reach anything with them, which it shows by trying.
+
+A real catalog installs what its actions need in an environment like this
+one, and grants each action only the destinations it must reach.
+"""
+
+[run]
+script = "run.sh"
+timeout = "2m"

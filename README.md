@@ -49,8 +49,37 @@ Catalogs carry no policy, so nothing can run until you add a rule under
 | `hello` | Any member; runs immediately |
 | `sandbox-info` | Any member; runs immediately |
 
-Later tiers add a catalog environment, actions made from templates with
-their own targets and secrets, and artifacts.
+### Tier 1: a catalog environment and its setup destinations
+
+| Item | What it shows |
+| --- | --- |
+| `_environments/net-tools` | An Ubuntu 26.04 image with curl, dig, openssl, the OpenSSH client and jq, built once by a setup script and rebuilt weekly |
+| `net-tools-info` | An action that runs in that image: it lists the tools, then shows it cannot reach the network with them |
+
+Building the image needs the Ubuntu archive. Under **Settings → Setup
+destinations**, let the `net-tools` environment reach it, keeping the budget
+already shown:
+
+```json
+{
+  "environments": {
+    "net-tools": [
+      {"host": "archive.ubuntu.com", "port": 443},
+      {"host": "security.ubuntu.com", "port": 443}
+    ]
+  },
+  "actions": {},
+  "budget_bytes": 2147483648
+}
+```
+
+These destinations apply only while the image is built. Add a policy rule
+for `net-tools-info` like the tier 0 ones. Its first run waits for the build;
+if the build fails, the petition says so and **Administration →
+Environments** has the log. The usual cause is a missing setup destination.
+
+Later tiers add actions made from templates with their own targets and
+secrets, and artifacts.
 
 ## Requirements
 
