@@ -73,10 +73,15 @@ already shown:
 }
 ```
 
-These destinations apply only while the image is built. Add a policy rule
-for `net-tools-info` like the tier 0 ones. Its first run waits for the build;
-if the build fails, the petition says so and **Administration →
-Environments** has the log. The usual cause is a missing setup destination.
+These destinations apply only while the image is built. Without them the
+build has no network at all, and fails with `Temporary failure resolving
+'archive.ubuntu.com'`.
+
+Add a policy rule for `net-tools-info` like the tier 0 ones. Its first run
+waits for the build, which takes a few minutes. If the build fails, the
+petition says so and Chancery tries again ten minutes later while the
+petition waits. The setup script's output is kept on the server, under
+`/var/lib/chancery/environments/jobs/` on an installed host.
 
 Later tiers add actions made from templates with their own targets and
 secrets, and artifacts.
