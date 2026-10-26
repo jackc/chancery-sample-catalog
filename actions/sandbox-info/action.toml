@@ -1,0 +1,19 @@
+schema = 1
+description = "Describe the sandbox an action runs in."
+help = """
+Every run boots a new virtual machine and discards it afterwards. This action
+reports what a script finds there: the kernel, CPUs and memory it was given, a
+read-only root filesystem, the temporary /work directory that holds the
+catalog files and anything the run writes, the variables Chancery sets, and
+whether any network is reachable.
+
+It selects no environment, so it runs on Chancery's minimal base, which has a
+POSIX shell and a few file utilities and nothing else. A real catalog chooses
+an environment with the tools its actions need, and grants network access
+only to the destinations an action must reach. Without a grant, there is no
+network at all.
+"""
+
+[run]
+script = "run.sh"
+timeout = "1m"

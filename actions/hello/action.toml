@@ -1,0 +1,32 @@
+schema = 1
+description = "Greet someone, one line a second. The first action to try."
+help = """
+Shows how a request reaches a script. Each parameter is validated before
+anyone is asked to approve it, recorded on the petition, and passed to the
+script as a CHANCERY_PARAM_ variable. Output streams to the page and the CLI
+as it is written, which is why the greeting is printed slowly.
+
+A real action replaces the greeting with its work and keeps the same shape:
+typed parameters with the narrowest constraints that fit, and a script that
+reads them from its environment.
+"""
+
+[[parameters]]
+name = "name"
+type = "string"
+pattern = '^[A-Za-z0-9][A-Za-z0-9 .,-]*$'
+max_length = 64
+default = "world"
+description = "Who to greet: letters, digits, spaces and . , -"
+
+[[parameters]]
+name = "count"
+type = "integer"
+min = 1
+max = 10
+default = 5
+description = "How many lines to print, one a second."
+
+[run]
+script = "run.sh"
+timeout = "1m"
