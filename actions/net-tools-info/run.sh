@@ -17,6 +17,8 @@ printf 'dig:     %s\n' "$(dig -v 2>&1 | head -n 1)"
 printf 'openssl: %s\n' "$(openssl version 2>&1)"
 printf 'ssh:     %s\n' "$(ssh -V 2>&1)"
 printf 'nc:      OpenBSD netcat %s\n' "$(dpkg-query -W -f '${Version}' netcat-openbsd 2>&1)"
+printf 'socat:   %s\n' "$(socat -V 2>&1 | grep -m 1 'socat version' | cut -d' ' -f2-3)"
+printf 'pg_dump: %s\n' "$(pg_dump --version 2>&1)"
 printf 'jq:      %s\n' "$(jq --version 2>&1)"
 
 section 'Network'

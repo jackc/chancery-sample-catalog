@@ -6,6 +6,6 @@ set -eu
 export DEBIAN_FRONTEND=noninteractive
 apt-get -q update
 apt-get -q install -y --no-install-recommends \
-	ca-certificates curl bind9-dnsutils openssl openssh-client netcat-openbsd jq
+	ca-certificates curl bind9-dnsutils openssl openssh-client netcat-openbsd socat postgresql-client jq
 apt-get clean
 rm -rf /var/lib/apt/lists/*

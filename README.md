@@ -53,7 +53,7 @@ Catalogs carry no policy, so nothing can run until you add a rule under
 
 | Item | What it shows |
 | --- | --- |
-| `_environments/net-tools` | An Ubuntu 26.04 image with curl, dig, openssl, the OpenSSH client, netcat and jq, built once by a setup script and rebuilt weekly |
+| `_environments/net-tools` | An Ubuntu 26.04 image with curl, dig, openssl, the OpenSSH client, netcat, socat, the PostgreSQL client and jq, built once by a setup script and rebuilt weekly |
 | `net-tools-info` | An action that runs in that image: it lists the tools, then shows it cannot reach the network with them |
 
 Building the image needs the Ubuntu archive. Under **Administration →
@@ -111,6 +111,9 @@ also deletes its rules and grants.
 | Template | What it shows |
 | --- | --- |
 | `ssh-service-status` | `systemctl status` for one unit on a server, over SSH with a stored key and a pinned host key |
+| `pg-dump` | `pg_dump` of one PostgreSQL database over TLS with a stored password, kept as an artifact |
+
+#### `ssh-service-status`
 
 The private key is a secret: Chancery stores it, and the catalog and the
 action's settings name it but never hold it. Make a key for the server, and
@@ -153,7 +156,46 @@ is the service's state.
 would also give the key a forced command on the server, so that even a
 leaked key could only report status.
 
-A later tier adds artifacts.
+#### `pg-dump`
+
+The password is a secret, delivered to the run as `PGPASSWORD`. Make a user
+that can read everything and change nothing:
+
+```sql
+CREATE ROLE chancery_dump LOGIN PASSWORD '...';
+GRANT pg_read_all_data TO chancery_dump;
+```
+
+Store the password under **Administration → Secrets**, such as
+`app-dump-password`. Then, under **Administration → Templates**, make an
+action from `pg-dump`, such as `pg-dump-app`, with:
+
+| Slot | Value |
+| --- | --- |
+| `server` | The server's name or address |
+| `port` | Its PostgreSQL port, 5432 by default |
+| `database` | The database to dump |
+| `user` | `chancery_dump` |
+| `sslmode` | `verify-full`, or `require` for a server whose certificate is not from a public authority |
+| `password` | The secret, `app-dump-password` |
+
+Grant the action the server and port under **Network access**, and allow the
+user in the server's `pg_hba.conf` from the host Chancery runs on, over TLS
+only (`hostssl`). Requesters choose only whether to leave out the data
+(`schema_only`).
+
+The dump is pg_dump's custom format: download it from the run's artifacts and
+restore it with `pg_restore`. Chancery keeps artifacts for seven days by
+default and caps a run's artifacts at 1 GiB. A larger database also needs a
+larger workspace than the host's default, since the dump is written there
+before Chancery collects it. The client is PostgreSQL 18's, so the server must
+be version 18 or older.
+
+`verify-full` checks the server's certificate against the authorities Ubuntu
+trusts and against `server`. `require` still encrypts, but cannot tell the
+real server from anything else that answers at that address.
+
+A later tier reads artifacts.
 
 ## Requirements
 

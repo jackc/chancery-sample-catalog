@@ -1,0 +1,74 @@
+schema = 1
+description = "Dump one PostgreSQL database and keep the dump as an artifact."
+environment = "net-tools"
+help = """
+A template: it cannot be requested itself. Under Administration → Templates,
+make one action from it per database, such as pg-dump-app, and give it the
+server, database, user and the secret that holds that user's password. Store
+the password first under Administration → Secrets. Then grant the action the
+server and its PostgreSQL port under Network access on its settings page.
+
+PostgreSQL's client cannot use an HTTP proxy, so the run forwards one local
+port through Chancery's egress proxy and connects there. TLS is required:
+verify-full checks the server's certificate against the system's certificate
+authorities and the server's name; require encrypts without checking who
+answered. The dump is pg_dump's custom format, which pg_restore reads, and it
+is kept as an artifact of the run.
+
+The client is PostgreSQL 18's, which dumps servers up to version 18. A real
+catalog might scrub personal data before keeping the dump, or upload it to
+storage of its own.
+"""
+
+[[parameters]]
+name = "schema_only"
+type = "boolean"
+default = false
+description = "Dump only the schema, without data."
+
+[[config]]
+name = "server"
+type = "host"
+description = "PostgreSQL server."
+
+[[config]]
+name = "port"
+type = "integer"
+min = 1
+max = 65535
+default = 5432
+description = "PostgreSQL port on the server."
+
+[[config]]
+name = "database"
+type = "string"
+pattern = '^[A-Za-z_][A-Za-z0-9_$-]*$'
+max_length = 63
+description = "Database to dump."
+
+[[config]]
+name = "user"
+type = "string"
+pattern = '^[A-Za-z_][A-Za-z0-9_$-]*$'
+max_length = 63
+description = "User to connect as. pg_read_all_data is enough."
+
+[[config]]
+name = "sslmode"
+type = "enum"
+values = ["verify-full", "require"]
+default = "verify-full"
+description = "verify-full checks the server's certificate; require only encrypts."
+
+[[config]]
+name = "password"
+type = "secret"
+variable = "PGPASSWORD"
+description = "Secret holding the user's password."
+
+[run]
+script = "run.sh"
+timeout = "30m"
+
+[outputs]
+artifacts = true
