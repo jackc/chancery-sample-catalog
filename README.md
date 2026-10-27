@@ -83,8 +83,40 @@ petition says so and Chancery tries again ten minutes later while the
 petition waits. The setup script's output is kept on the server, under
 `/var/lib/chancery/environments/jobs/` on an installed host.
 
-Later tiers add actions made from templates with their own targets and
-secrets, and artifacts.
+### Tier 2: actions made from templates, and their run destinations
+
+| Template | What it shows |
+| --- | --- |
+| `tls-check` | The certificate a server presents; fails if it does not verify or expires within `warn_days` |
+| `http-check` | One HTTPS fetch; fails unless the status is `expect_status`, and reports redirects without following them |
+
+These are templates: neither can be requested itself, and neither names a
+server. Under **Administration → Templates**, make an action from each one,
+such as `tls-check-www` with `server` set to `www.example.com`. The action is
+an ordinary action with its own name, policy and grants, so make one for each
+server you want to check.
+
+A new action cannot reach its server yet, and its page says so. Under
+**Settings → Run destinations by action**, grant each action exactly its
+server and port:
+
+```json
+{
+  "tls-check-www": [{"host": "www.example.com", "port": 443}],
+  "http-check-www": [{"host": "www.example.com", "port": 443}]
+}
+```
+
+Unlike setup destinations, these apply whenever the action runs, and only to
+that action. A server with a private address, such as one on your own
+network, also needs `"ip"` in its grant: hostname grants connect only to
+public addresses.
+
+Then add policy rules for the new actions, not the templates. Suggested
+rule: any member; runs immediately. Deleting an action made from a template
+also deletes its rules and grants.
+
+Later tiers add secrets and artifacts.
 
 ## Requirements
 

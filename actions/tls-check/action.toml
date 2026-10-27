@@ -1,0 +1,46 @@
+schema = 1
+description = "Show the certificate a server presents, and fail if it is invalid or expires soon."
+environment = "net-tools"
+help = """
+A template: it cannot be requested itself. Under Administration → Templates,
+make one action from it per server, such as tls-check-www, and give it the
+server and port. Then grant that action the same host and port under
+Settings → Run destinations by action; until then its page warns that it
+cannot reach the server. A server with a private address needs the grant to
+pin its "ip".
+
+The run connects through Chancery's egress proxy, which is the guest's only
+way out: it has no DNS or route of its own, and the proxy reaches only the
+destinations granted to this action. It prints the protocol, the
+certificate's subject, issuer, names and validity, and fails if the chain
+does not verify, the certificate does not name the server, or it expires
+within the warning period.
+
+A real catalog might add a client certificate, check a list of ports, or
+feed the expiry date to its monitoring.
+"""
+
+[[config]]
+name = "server"
+type = "host"
+description = "Server whose certificate to check."
+
+[[config]]
+name = "port"
+type = "integer"
+min = 1
+max = 65535
+default = 443
+description = "TLS port on the server."
+
+[[config]]
+name = "warn_days"
+type = "integer"
+min = 0
+max = 365
+default = 30
+description = "Fail if the certificate expires within this many days."
+
+[run]
+script = "run.sh"
+timeout = "1m"
