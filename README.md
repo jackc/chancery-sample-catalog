@@ -53,7 +53,7 @@ Catalogs carry no policy, so nothing can run until you add a rule under
 
 | Item | What it shows |
 | --- | --- |
-| `_environments/net-tools` | An Ubuntu 26.04 image with curl, dig, openssl, the OpenSSH client and jq, built once by a setup script and rebuilt weekly |
+| `_environments/net-tools` | An Ubuntu 26.04 image with curl, dig, openssl, the OpenSSH client, netcat and jq, built once by a setup script and rebuilt weekly |
 | `net-tools-info` | An action that runs in that image: it lists the tools, then shows it cannot reach the network with them |
 
 Building the image needs the Ubuntu archive. Under **Administration →
@@ -106,7 +106,54 @@ Then add policy rules for the new actions, not the templates. Suggested
 rule: any member; runs immediately. Deleting an action made from a template
 also deletes its rules and grants.
 
-Later tiers add secrets and artifacts.
+### Tier 3: secrets
+
+| Template | What it shows |
+| --- | --- |
+| `ssh-service-status` | `systemctl status` for one unit on a server, over SSH with a stored key and a pinned host key |
+
+The private key is a secret: Chancery stores it, and the catalog and the
+action's settings name it but never hold it. Make a key for the server, and
+an unprivileged user on the server for it to log in as. `systemctl status`
+needs no privileges.
+
+```sh
+ssh-keygen -t ed25519 -N '' -C chancery -f chancery-status
+```
+
+Add `chancery-status.pub` to that user's `~/.ssh/authorized_keys` on the
+server, prefixed with `restrict ` so that the key gets no terminal or
+forwarding. Then, under **Administration → Secrets**, store the contents of
+`chancery-status` as a secret, such as `web1-status-key`, and delete the local
+copy.
+
+Under **Administration → Templates**, make an action from
+`ssh-service-status`, such as `ssh-service-status-web1`, with:
+
+| Slot | Value |
+| --- | --- |
+| `server` | The server's name or address |
+| `port` | Its SSH port, 22 by default |
+| `user` | The user the key logs in as |
+| `host_key` | The server's host key: the contents of `/etc/ssh/ssh_host_ed25519_key.pub` on the server |
+| `key` | The secret, `web1-status-key` |
+
+Copy the host key from the server itself, not from `ssh-keyscan` over the
+network: the run trusts that key and no other, so a wrong key here would be
+trusted on every run. The run reports a mismatch as `Host key verification
+failed.`
+
+Then grant the action the server and its SSH port under **Network access**,
+as in tier 2, and add a policy rule. Requesters choose only the unit, and the
+pattern on it keeps the remote command to `systemctl status` and a unit name.
+The run fails when the unit is not running or does not exist, so its outcome
+is the service's state.
+
+`restrict` limits what a login can open, not what it can run. A real catalog
+would also give the key a forced command on the server, so that even a
+leaked key could only report status.
+
+A later tier adds artifacts.
 
 ## Requirements
 

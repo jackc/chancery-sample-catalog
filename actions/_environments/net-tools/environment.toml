@@ -1,5 +1,5 @@
 schema = 1
-description = "Ubuntu 26.04 with curl, dig, openssl, the OpenSSH client and jq."
+description = "Ubuntu 26.04 with curl, dig, openssl, the OpenSSH client, netcat and jq."
 base = "ubuntu@26.04"
 
 # setup.sh runs once per build, as root in a disposable guest, and reaches the

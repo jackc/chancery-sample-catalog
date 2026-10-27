@@ -1,0 +1,66 @@
+schema = 1
+description = "Show the status of a systemd service on a server, over SSH."
+environment = "net-tools"
+help = """
+A template: it cannot be requested itself. Under Administration → Templates,
+make one action from it per server, such as ssh-service-status-web1, and give
+it the server, the login user, the server's SSH host key and the secret that
+holds a private key for that user. Store the key first under Administration →
+Secrets. Then grant the action the server's address and SSH port under
+Network access on its settings page.
+
+The run connects through Chancery's egress proxy and accepts only the host key
+given here: there is no first-use prompt and no other known_hosts. It runs
+`systemctl status` for the requested unit and nothing else, and its outcome
+follows systemctl's: it fails if the unit is not running or does not exist.
+
+The key still logs in as an ordinary user. A real catalog would limit it on
+the server with `restrict` and a forced command in authorized_keys, so that
+the key cannot do more than this action asks.
+"""
+
+[[parameters]]
+name = "unit"
+type = "string"
+pattern = '^[A-Za-z0-9@._:-]+$'
+max_length = 128
+description = "Service unit to show, such as nginx or nginx.service."
+
+[[config]]
+name = "server"
+type = "host"
+description = "Server whose services this action reports on."
+
+[[config]]
+name = "port"
+type = "integer"
+min = 1
+max = 65535
+default = 22
+description = "SSH port on the server."
+
+[[config]]
+name = "user"
+type = "string"
+pattern = '^[a-z_][a-z0-9_-]*$'
+max_length = 32
+description = "User to log in as."
+
+[[config]]
+name = "host_key"
+type = "string"
+pattern = '^(ssh-ed25519|ecdsa-sha2-nistp(256|384|521)|ssh-rsa) [A-Za-z0-9+/]+={0,3}( [ -~]*)?$'
+max_length = 1024
+description = "The server's public host key, one line as in /etc/ssh/ssh_host_ed25519_key.pub."
+
+[[config]]
+name = "key"
+type = "secret"
+variable = "SSH_KEY"
+as = "file"
+description = "Secret holding a private key that can log in as the user."
+
+[run]
+script = "run.sh"
+args = ["{unit}"]
+timeout = "2m"
