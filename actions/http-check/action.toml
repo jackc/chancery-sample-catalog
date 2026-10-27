@@ -5,9 +5,9 @@ help = """
 A template: it cannot be requested itself. Under Administration → Templates,
 make one action from it per URL, such as http-check-www, and give it the
 server, port and path. Then grant that action the same host and port under
-Settings → Run destinations by action; until then its page warns that it
-cannot reach the server. A server with a private address needs the grant to
-pin its "ip".
+Network access on its settings page (Administration → Action settings, then
+the action). Until then its page warns that it cannot reach the server and
+links there. A server with a private address needs the grant to pin its IP.
 
 The run fetches https://SERVER:PORT/PATH through Chancery's egress proxy,
 verifying the certificate, and reports the status, timing and size. The URL
@@ -51,4 +51,4 @@ description = "HTTP status the response must have."
 
 [run]
 script = "run.sh"
-timeout = "1m"
+timeout = "2m"

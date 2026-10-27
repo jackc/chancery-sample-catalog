@@ -14,7 +14,8 @@ section() {
 
 if [ -z "${HTTPS_PROXY:-}" ]; then
 	echo "No egress proxy: $CHANCERY_ACTION has no run destinations." >&2
-	echo "Grant it $server port $port under Settings → Run destinations by action." >&2
+	echo "Grant it $server port $port under Network access on its settings page:" >&2
+	echo "Administration → Action settings → $CHANCERY_ACTION." >&2
 	exit 2
 fi
 proxy=${HTTPS_PROXY#*://}

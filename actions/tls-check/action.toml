@@ -5,9 +5,9 @@ help = """
 A template: it cannot be requested itself. Under Administration → Templates,
 make one action from it per server, such as tls-check-www, and give it the
 server and port. Then grant that action the same host and port under
-Settings → Run destinations by action; until then its page warns that it
-cannot reach the server. A server with a private address needs the grant to
-pin its "ip".
+Network access on its settings page (Administration → Action settings, then
+the action). Until then its page warns that it cannot reach the server and
+links there. A server with a private address needs the grant to pin its IP.
 
 The run connects through Chancery's egress proxy, which is the guest's only
 way out: it has no DNS or route of its own, and the proxy reaches only the
@@ -43,4 +43,4 @@ description = "Fail if the certificate expires within this many days."
 
 [run]
 script = "run.sh"
-timeout = "1m"
+timeout = "2m"

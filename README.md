@@ -42,7 +42,7 @@ chancery catalog check actions
 | `sandbox-info` | The machine an action runs in: a new VM for every run, a read-only root, a temporary `/work`, and no network without a grant |
 
 Catalogs carry no policy, so nothing can run until you add a rule under
-**Administration → Policy**. Suggested rules:
+**Administration → Action settings**. Suggested rules:
 
 | Action | Rule |
 | --- | --- |
@@ -56,22 +56,14 @@ Catalogs carry no policy, so nothing can run until you add a rule under
 | `_environments/net-tools` | An Ubuntu 26.04 image with curl, dig, openssl, the OpenSSH client and jq, built once by a setup script and rebuilt weekly |
 | `net-tools-info` | An action that runs in that image: it lists the tools, then shows it cannot reach the network with them |
 
-Building the image needs the Ubuntu archive. Under **Settings → Setup
-destinations**, let the `net-tools` environment reach it, keeping the budget
-already shown:
+Building the image needs the Ubuntu archive. Under **Administration →
+Environments → Setup network access**, add a shared environment named
+`net-tools` with these destinations, keeping the budget already shown:
 
-```json
-{
-  "environments": {
-    "net-tools": [
-      {"host": "archive.ubuntu.com", "port": 443},
-      {"host": "security.ubuntu.com", "port": 443}
-    ]
-  },
-  "actions": {},
-  "budget_bytes": 2147483648
-}
-```
+| Host | Port |
+| --- | --- |
+| `archive.ubuntu.com` | 443 |
+| `security.ubuntu.com` | 443 |
 
 These destinations apply only while the image is built. Without them the
 build has no network at all, and fails with `Temporary failure resolving
@@ -96,21 +88,19 @@ such as `tls-check-www` with `server` set to `www.example.com`. The action is
 an ordinary action with its own name, policy and grants, so make one for each
 server you want to check.
 
-A new action cannot reach its server yet, and its page says so. Under
-**Settings → Run destinations by action**, grant each action exactly its
-server and port:
-
-```json
-{
-  "tls-check-www": [{"host": "www.example.com", "port": 443}],
-  "http-check-www": [{"host": "www.example.com", "port": 443}]
-}
-```
+A new action cannot reach its server yet. Its page says so and links to
+**Network access** on the action's settings page (also under
+**Administration → Action settings**). There, grant each action exactly its
+server and port, such as `www.example.com` port 443 for both `tls-check-www`
+and `http-check-www`.
 
 Unlike setup destinations, these apply whenever the action runs, and only to
 that action. A server with a private address, such as one on your own
-network, also needs `"ip"` in its grant: hostname grants connect only to
+network, also needs a pinned IP in its grant: hostname grants connect only to
 public addresses.
+
+Each run's timeout includes starting its VM, which can take most of a
+minute on a small host, so these templates allow two minutes.
 
 Then add policy rules for the new actions, not the templates. Suggested
 rule: any member; runs immediately. Deleting an action made from a template
