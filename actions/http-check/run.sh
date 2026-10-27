@@ -25,10 +25,28 @@ case $server in
 *) url="https://$server:$port$path" ;;
 esac
 
+# The egress proxy answers 403 for a destination this action is not granted
+# and 502 for a granted one the host could not connect to. Each tool reports
+# the answer in its own words; proxy_hint explains it, or fails if the log
+# holds neither.
+proxy_hint() {
+	if grep -q -E '(response |reason=|HTTP/1\.[01] )403|CONNECT .*: Forbidden' "$1"; then
+		echo "The egress proxy refused: $CHANCERY_ACTION is not granted $server port $port." >&2
+		echo "Grant it under Network access: Administration → Action settings → $CHANCERY_ACTION." >&2
+	elif grep -q -E '(response |reason=|HTTP/1\.[01] )502|CONNECT .*: Bad Gateway' "$1"; then
+		echo "$CHANCERY_ACTION is granted $server port $port, but the Chancery host could not connect to it." >&2
+		echo "Check that the server accepts connections on port $port from the Chancery host." >&2
+	else
+		return 1
+	fi
+}
+
 format='status=%{http_code}\nversion=%{http_version}\nfirst_byte=%{time_starttransfer}\ntotal=%{time_total}\nbytes=%{size_download}\ntype=%{content_type}\nlocation=%{redirect_url}\n'
-if ! result=$(curl -sS -g --proto =https --max-time 30 -o /dev/null -w "$format" "$url"); then
+errors=$TMPDIR/curl.err
+if ! result=$(curl -sS -g --proto =https --max-time 30 -o /dev/null -w "$format" "$url" 2>"$errors"); then
+	cat "$errors" >&2
 	echo "Could not fetch $url." >&2
-	echo "If the proxy refused the connection, check that $CHANCERY_ACTION is granted $server port $port." >&2
+	proxy_hint "$errors"
 	exit 1
 fi
 

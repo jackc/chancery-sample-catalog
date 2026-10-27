@@ -99,6 +99,14 @@ that action. A server with a private address, such as one on your own
 network, also needs a pinned IP in its grant: hostname grants connect only to
 public addresses.
 
+When a run cannot connect, its output says which side to look at. The egress
+proxy answers `403 Forbidden` for a destination the action is not granted, and
+`502 Bad Gateway` for a granted one that the Chancery host could not connect
+to, such as a server that refuses the port or a firewall that drops it. The
+run's network usage on the petition page counts these as denied and
+unreachable streams. Chancery releases before the distinction answer 403 for
+both.
+
 Each run's timeout includes starting its VM, which can take most of a
 minute on a small host, so these templates allow two minutes.
 

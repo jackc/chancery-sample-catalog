@@ -12,7 +12,6 @@ database=$CHANCERY_CONFIG_DATABASE
 user=$CHANCERY_CONFIG_USER
 sslmode=$CHANCERY_CONFIG_SSLMODE
 schema_only=${CHANCERY_PARAM_SCHEMA_ONLY:-false}
-local_port=15432
 
 section() {
 	printf '\n== %s ==\n' "$1"
@@ -33,21 +32,47 @@ case $server in
 *:*) target="[$server]" ;;
 esac
 
+# The egress proxy answers 403 for a destination this action is not granted
+# and 502 for a granted one the host could not connect to. Each tool reports
+# the answer in its own words; proxy_hint explains it, or fails if the log
+# holds neither.
+proxy_hint() {
+	if grep -q -E '(response |reason=|HTTP/1\.[01] )403|CONNECT .*: Forbidden' "$1"; then
+		echo "The egress proxy refused: $CHANCERY_ACTION is not granted $server port $port." >&2
+		echo "Grant it under Network access: Administration → Action settings → $CHANCERY_ACTION." >&2
+	elif grep -q -E '(response |reason=|HTTP/1\.[01] )502|CONNECT .*: Bad Gateway' "$1"; then
+		echo "$CHANCERY_ACTION is granted $server port $port, but the Chancery host could not connect to it." >&2
+		echo "Check that the server accepts connections on port $port from the Chancery host." >&2
+	else
+		return 1
+	fi
+}
+
+# Listeners are read from /proc rather than found by connecting, which would
+# open a tunnel to the server. The local port is one nothing listens on yet,
+# so the listener that appears is socat's.
+listening() {
+	grep -q "$(printf ':%04X 00000000:0000 0A' "$1")" /proc/net/tcp
+}
+local_port=15432
+while listening "$local_port"; do
+	local_port=$((local_port + 1))
+done
+
 # socat's log shows the proxy's answer when it refuses the server.
 tunnel_log=$TMPDIR/tunnel.log
 socat "TCP-LISTEN:$local_port,bind=127.0.0.1,reuseaddr,fork" \
 	"PROXY:$proxy_host:$target:$port,proxyport=$proxy_port" 2>"$tunnel_log" &
 tunnel=$!
 trap 'kill "$tunnel" 2>/dev/null' EXIT
+trap 'exit 1' INT TERM HUP
 
-# Wait for the listener in /proc rather than by connecting, which would open
-# a tunnel to the server.
-listening=$(printf ':%04X 00000000:0000 0A' "$local_port")
 tries=0
-until grep -q "$listening" /proc/net/tcp; do
+until listening "$local_port"; do
 	tries=$((tries + 1))
 	if [ "$tries" -gt 50 ] || ! kill -0 "$tunnel" 2>/dev/null; then
-		echo "The local tunnel to the egress proxy did not start." >&2
+		echo "The local tunnel to the egress proxy did not start:" >&2
+		cat "$tunnel_log" >&2
 		exit 1
 	fi
 	sleep 0.1
@@ -71,9 +96,8 @@ if ! pg_dump "$@" --file="$dump" "$conninfo" 2>"$errors"; then
 	cat "$errors" >&2
 	echo >&2
 	printf 'pg_dump could not dump %s from %s:%s. (127.0.0.1 port %s is the local end of the tunnel to it.)\n' "$database" "$server" "$port" "$local_port" >&2
-	if refusal=$(grep -m 1 -o 'CONNECT .*' "$tunnel_log"); then
-		printf 'The egress proxy refused it: %s.\n' "$refusal" >&2
-		echo "Check that $CHANCERY_ACTION is granted $server port $port under Network access." >&2
+	if proxy_hint "$tunnel_log"; then
+		:
 	elif grep -q 'certificate verify failed' "$errors"; then
 		echo "The server's certificate is not from an authority the system trusts." >&2
 		echo "Give the server a public certificate for $server, or make the action with sslmode require." >&2

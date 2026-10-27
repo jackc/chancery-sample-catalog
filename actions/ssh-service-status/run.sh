@@ -19,6 +19,22 @@ fi
 proxy=${HTTPS_PROXY#*://}
 proxy=${proxy%/}
 
+# The egress proxy answers 403 for a destination this action is not granted
+# and 502 for a granted one the host could not connect to. Each tool reports
+# the answer in its own words; proxy_hint explains it, or fails if the log
+# holds neither.
+proxy_hint() {
+	if grep -q -E '(response |reason=|HTTP/1\.[01] )403|CONNECT .*: Forbidden' "$1"; then
+		echo "The egress proxy refused: $CHANCERY_ACTION is not granted $server port $port." >&2
+		echo "Grant it under Network access: Administration → Action settings → $CHANCERY_ACTION." >&2
+	elif grep -q -E '(response |reason=|HTTP/1\.[01] )502|CONNECT .*: Bad Gateway' "$1"; then
+		echo "$CHANCERY_ACTION is granted $server port $port, but the Chancery host could not connect to it." >&2
+		echo "Check that the server accepts connections on port $port from the Chancery host." >&2
+	else
+		return 1
+	fi
+}
+
 # known_hosts names the server by the action's name, so the entry does not
 # depend on how ssh would spell a host and port, and a mismatch is reported
 # under the action's name. The working directory is the run's writable
@@ -45,8 +61,9 @@ ssh -F /dev/null -T \
 	-o ConnectTimeout=20 \
 	-o ProxyCommand="nc -X connect -x $proxy %h %p" \
 	-p "$port" -l "$user" -- "$server" \
-	systemctl status --no-pager --lines=20 -- "$unit"
+	systemctl status --no-pager --lines=20 -- "$unit" 2>"$TMPDIR/ssh.err"
 status=$?
+cat "$TMPDIR/ssh.err" >&2
 
 # systemctl status exits 3 for a unit that is not running and 4 for one it
 # does not know. ssh exits 255 for its own failures.
@@ -57,8 +74,9 @@ case $status in
 255)
 	echo >&2
 	echo "ssh could not log in to $user@$server:$port." >&2
-	echo "If the proxy refused the connection, check that $CHANCERY_ACTION is granted $server port $port." >&2
-	echo "If the host key did not match, check the action's host_key against the server's /etc/ssh/ssh_host_*_key.pub." >&2
+	if ! proxy_hint "$TMPDIR/ssh.err" && grep -q 'Host key verification failed' "$TMPDIR/ssh.err"; then
+		echo "Check the action's host_key against the server's /etc/ssh/ssh_host_*_key.pub." >&2
+	fi
 	;;
 esac
 exit $status
