@@ -18,4 +18,4 @@ one, and grants each action only the destinations it must reach.
 
 [run]
 script = "run.sh"
-timeout = "2m"
+timeout = "1m"

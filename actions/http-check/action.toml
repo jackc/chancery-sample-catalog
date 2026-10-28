@@ -51,4 +51,4 @@ description = "HTTP status the response must have."
 
 [run]
 script = "run.sh"
-timeout = "2m"
+timeout = "1m"

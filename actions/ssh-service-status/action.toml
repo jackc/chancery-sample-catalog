@@ -63,4 +63,4 @@ description = "Secret holding a private key that can log in as the user."
 [run]
 script = "run.sh"
 args = ["{unit}"]
-timeout = "2m"
+timeout = "1m"

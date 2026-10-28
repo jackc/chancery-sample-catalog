@@ -43,4 +43,4 @@ description = "Fail if the certificate expires within this many days."
 
 [run]
 script = "run.sh"
-timeout = "2m"
+timeout = "1m"

@@ -107,9 +107,6 @@ run's network usage on the petition page counts these as denied and
 unreachable streams. Chancery releases before the distinction answer 403 for
 both.
 
-Each run's timeout includes starting its VM, which can take most of a
-minute on a small host, so these templates allow two minutes.
-
 Then add policy rules for the new actions, not the templates. Suggested
 rule: any member; runs immediately. Deleting an action made from a template
 also deletes its rules and grants.
